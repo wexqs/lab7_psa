@@ -1,0 +1,48 @@
+import os
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+
+# URL для загрузки
+url = "http://rokot.ibst.psu/anatoly/"
+
+try:
+    # Выполняем GET-запрос
+    response = requests.get(url)
+
+    # Проверяем, успешен ли запрос
+    if response.status_code == 200:
+        print("Страница успешно загружена!")
+        
+        # Парсим HTML-код страницы
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Создаем папку для сохранения изображений
+        os.makedirs('images', exist_ok=True)
+
+        # Находим все теги <img> на странице
+        img_tags = soup.find_all('img')
+
+        for img in img_tags:
+            # Получаем URL изображения
+            img_url = urljoin(url, img['src'])
+            print(f"Загружаем изображение: {img_url}")
+
+            # Загружаем изображение
+            img_response = requests.get(img_url)
+            
+            if img_response.status_code == 200:
+                # Определяем имя файла
+                img_name = os.path.join('images', os.path.basename(img_url))
+                
+                # Сохраняем изображение в файл
+                with open(img_name, 'wb') as f:
+                    f.write(img_response.content)
+                print(f"Изображение сохранено как: {img_name}")
+            else:
+                print(f"Не удалось загрузить изображение. Статус код: {img_response.status_code}")
+    else:
+        print(f"Не удалось загрузить страницу. Статус код: {response.status_code}")
+
+except requests.exceptions.RequestException as e:
+    print(f"Произошла ошибка: {e}")
